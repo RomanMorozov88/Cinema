@@ -1,4 +1,37 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <web-app>
 
+    <!--===============================================================================================-->
+    <servlet>
+        <servlet-name>HallServlet</servlet-name>
+        <servlet-class>layers.controller.HallServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>HallServlet</servlet-name>
+        <url-pattern>/halls</url-pattern>
+    </servlet-mapping>
+
+    <!--===============================================================================================-->
+    <servlet>
+        <servlet-name>HallsForChoiceServlet</servlet-name>
+        <servlet-class>layers.controller.HallsForChoiceServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>HallsForChoiceServlet</servlet-name>
+        <url-pattern>/hallsOptions</url-pattern>
+    </servlet-mapping>
+
+    <!--===============================================================================================-->
+    <servlet>
+        <servlet-name>PayServlet</servlet-name>
+        <servlet-class>layers.controller.PayServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PayServlet</servlet-name>
+        <url-pattern>/payday</url-pattern>
+    </servlet-mapping>
+
 </web-app>

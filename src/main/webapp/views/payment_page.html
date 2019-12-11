@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+          crossorigin="anonymous">
+
+    <title>Payment</title>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+
+    <script>
+
+        //Получает и выводит на страницу данные о выбранном месте.
+        function showMainInfo() {
+            var place = JSON.parse(sessionStorage.getItem("selected_place"));
+            var result = "<p>Вы выбрали место в кинозале " + place.hall_name + "<br/>";
+            result += "ряд: " + place.row_number + "<br/>"
+                + "место: " + place.seat_number + "<br/>"
+                + "Сумма к оплате: " + place.seat_price + "<br/>";
+            getData(place.hall_name, place.row_number, place.seat_number);
+            var innerElement = document.getElementById("main_info");
+            innerElement.innerHTML = result;
+        }
+
+        //Размещает полученные данные о выбранном месте в форме для отправки.
+        function getData(name, row, seat) {
+            var result = "<input type=\"hidden\" id=\"hName\" name=\"hallname\" value=\"" + name + "\">";
+            result += "<input type=\"hidden\" id=\"rNumber\" name=\"rownumber\" value=\"" + row + "\">";
+            result += "<input type=\"hidden\" id=\"sNumber\" name=\"seatnumber\" value=\"" + seat + "\">";
+            var innerElement = document.getElementById("placeForSend");
+            innerElement.innerHTML = result;
+        }
+
+        function sendToServlet() {
+            if (validate()) {
+                var myData = $('#formForSend').serialize();
+                $.ajax({
+                    url: '/kino/payday',
+                    method: 'post',
+                    data: myData,
+                    complete: function () {
+                        alert("Спасибо!");
+                        window.location.pathname = "/kino/";
+                    }
+                })
+            } else {
+                alert("Заполните все поля.");
+            }
+        }
+
+        function validate() {
+            var result = true;
+            if (document.sendingForm.username.value === ''
+                || document.sendingForm.userphone.value === '') {
+                result = false;
+            }
+            return result;
+        }
+
+    </script>
+
+</head>
+<body>
+
+<div class="container">
+    <div class="row pt-3" id="main_info">
+    </div>
+    <div class="row">
+        <form id="formForSend" name="sendingForm">
+            <div class="form-group">
+                <input type="text" class="form-control" id="uName" name="username" placeholder="ФИО">
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" id="uPhone" name="userphone" placeholder="Номер телефона">
+            </div>
+            <div id="placeForSend"></div>
+            <button type="button" class="btn btn-success" onclick="sendToServlet()">Оплатить</button>
+        </form>
+    </div>
+</div>
+<!--По загрузке страницы ыполняем следующие скрипты:-->
+<script>
+    $(showMainInfo());
+</script>
+
+</body>
+</html>

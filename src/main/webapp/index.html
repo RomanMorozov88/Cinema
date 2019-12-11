@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+          crossorigin="anonymous">
+
+    <title>Welcome!</title>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+
+    <script>
+
+        //Получаем список всех доступных кинозалов.
+        function loadHalls() {
+            $.ajax({
+                url: './hallsOptions',
+                method: 'get',
+                complete: function (data) {
+                    var halls = JSON.parse(data.responseText);
+                    var result = "<h4>Доступные кинозалы:</h4>"
+                        + "<select size='1' id='selectHall' onchange='loadHallPlaces(this)'>";
+                    for (var i = 0; i < halls.length; i++) {
+                        result += "<option value='" + halls[i] + "'>" + halls[i] + "</option>";
+                    }
+                    result += "</select>";
+                    var table = document.getElementById("hallsSelect");
+                    table.innerHTML = result;
+                    loadHallPlaces(document.getElementById("selectHall"));
+                }
+            })
+        }
+
+        // Получаем данные от сервлета о местах в зале.
+        function loadHallPlaces(select) {
+            var currentHall = select.options[select.selectedIndex].value;
+            var dataString = "currentCine=" + currentHall;
+            $.ajax({
+                url: './halls',
+                method: 'get',
+                data: dataString,
+                complete: function (data) {
+                    var hall = JSON.parse(data.responseText);
+                    var places = hall.placeList;
+                    var rowsCount = hall.seatsCount;
+                    var price = hall.placePrice;
+                    var result = "<h4>Бронирование места на сеанс:</h4>"
+                        + "<table class=\"table table-bordered\">"
+                        + "<thead>"
+                        + "<tr>"
+                        + "<th style=\"width: 120px;\">Ряд / Место</th>";
+                    for (var i = 1; i <= rowsCount; i++) {
+                        result += "<th>" + i + "</th>";
+                    }
+                    result += "</tr>"
+                        + "</thead>"
+                        + "<tbody>";
+                    for (var key in places) {
+                        result += "<tr>"
+                            + "<th>" + key + "</th>";
+                        for (var i = 0; i < places[key].length; i++) {
+                            var seat = places[key][i].seatNumber;
+                            var status = places[key][i].seatStatus;
+                            if (!status) {
+                                var toValue = JSON.stringify({
+                                    hall_name: hall.hallName,
+                                    row_number: key,
+                                    seat_number: seat,
+                                    seat_price: price
+                                });
+                                result += "<td><input type=\"radio\" name=\"radio_place\" " +
+                                    "value=" + toValue + "> Ряд "
+                                    + key + ", " + "Место " + seat + "</td>";
+                            } else {
+                                result += "<td> Ряд "
+                                    + key + ", " + "Место " + seat + "</td>";
+                            }
+                        }
+                        result += "</tr>";
+                    }
+                    result += "</tbody>"
+                        + "</table>";
+                    var table = document.getElementById("hallTable");
+                    table.innerHTML = result;
+                }
+            })
+        }
+
+        //Переход на страницу оплаты + передача данных о выбранном месте.
+        function jumpToPayment() {
+            var place = document.getElementsByName("radio_place");
+            var buffer = null;
+            for (var i = 0; i < place.length; i++) {
+                if (place[i].checked) {
+                    buffer = place[i].value;
+                    break;
+                }
+            }
+            if (placeValidate(buffer)) {
+                sessionStorage.setItem("selected_place", buffer);
+                window.location.href = "views/payment_page.html";
+            } else {
+                alert("Выбирете место.")
+            }
+        }
+
+        //Проверяем- выбрано ли место.
+        function placeValidate(place) {
+            var result = true;
+            if (place == null) {
+                result = false;
+            }
+            return result;
+        }
+
+        //Обновляет страницу каждые 10 секунд.
+        setTimeout(function(){
+            location.reload();
+        }, 10000);
+
+    </script>
+
+</head>
+<body>
+<div class="container">
+    <div class="row pt-3" id="hallsSelect">
+        <!--Размещаем доступные залы.-->
+    </div>
+    <div class="row pt-3" id="hallTable">
+        <!--Размещаем таблицу мест в зале.-->
+    </div>
+    <div class="row float-right" id="payment" onclick="jumpToPayment()">
+        <button type="button" class="btn btn-success">Оплатить</button>
+    </div>
+</div>
+
+<!--По загрузке страницы ыполняем следующие скрипты:-->
+<script>
+    $(loadHalls());
+</script>
+
+</body>
+</html>
