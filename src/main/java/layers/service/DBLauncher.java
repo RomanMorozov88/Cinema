@@ -84,8 +84,16 @@ public class DBLauncher implements DataLauncher {
      * @param place
      */
     @Override
-    public boolean takeThePlace(User user, Place place) {
-        boolean result = false;
+    public synchronized int takeThePlace(User user, Place place) {
+        int result = 0;
+        if (!this.validateBeforAddInDB(place)) {
+            result = addInDb(user, place);
+        }
+        return result;
+    }
+
+    private int addInDb(User user, Place place) {
+        int result = -1;
         try (
                 Connection connection = SOURCE.getConnection();
                 PreparedStatement statement = connection.prepareStatement(
@@ -96,11 +104,23 @@ public class DBLauncher implements DataLauncher {
             statement.setInt(3, user.getPhone());
             statement.setInt(4, place.getRow());
             statement.setInt(5, place.getSeat());
-            result = !statement.execute();
+            if (!statement.execute()) {
+                result = 1;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return result;
+    }
+
+    /**
+     * Проверка выбранного места- занято или нет для случая, когда
+     * несколько клиентов выбрали одинакковое место.
+     * @param place
+     * @return
+     */
+    private boolean validateBeforAddInDB(Place place) {
+        return this.checkPlace(place.getRow(), place.getSeat(), this.getSellTickets(place.getHall()));
     }
 
     /**

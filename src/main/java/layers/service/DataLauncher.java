@@ -28,6 +28,6 @@ public interface DataLauncher {
      * @param place
      * @return
      */
-    boolean takeThePlace(User user, Place place);
+    int takeThePlace(User user, Place place);
 
 }

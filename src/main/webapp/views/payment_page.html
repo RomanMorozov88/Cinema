@@ -47,6 +47,8 @@
             innerElement.innerHTML = result;
         }
 
+        //Отправляет данные о выбранном месте и о покупателе
+        //Получает в ответе сообщение о результате транзакции в БД.
         function sendToServlet() {
             if (validate()) {
                 var myData = $('#formForSend').serialize();
@@ -54,8 +56,9 @@
                     url: '/kino/payday',
                     method: 'post',
                     data: myData,
-                    complete: function () {
-                        alert("Спасибо!");
+                    complete: function (data) {
+                        var result = JSON.parse(data.responseText);
+                        alert(decodeURIComponent(result.answer));
                         window.location.pathname = "/kino/";
                     }
                 })
