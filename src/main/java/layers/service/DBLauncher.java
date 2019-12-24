@@ -79,36 +79,67 @@ public class DBLauncher implements DataLauncher {
 
     /**
      * Помещаем выбранное место в таблицу.
+     * В одной транзакции производим два запроса- первый- на добавление строки
+     * (если ещё нет строки, удовлетворяющей условию наличия записи с hall_name seat_row seat_number
+     * выбранного места)
+     * Второй select запрос- что бы проверить, что именно этот пользователь заянл выбранное место.
      *
-     * @param user
-     * @param place
+     * буду возвращены:
+     * 0 - если место уже было кем-то занято.
+     * 1 - если всё прошло удачно.
+     * -1 - если пойман SQLException.
+     *
+     * @param user  - данные пользователя
+     * @param place = информация о выбранномместе
      */
     @Override
-    public synchronized int takeThePlace(User user, Place place) {
+    public int takeThePlace(User user, Place place) {
         int result = 0;
-        if (!this.validateBeforAddInDB(place)) {
-            result = addInDb(user, place);
-        }
-        return result;
-    }
-
-    private int addInDb(User user, Place place) {
-        int result = -1;
         try (
                 Connection connection = SOURCE.getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO dbSellTickets (hall_name, customer_name, customer_phone, seat_row, seat_number) VALUES (?, ?, ?, ?, ?);")
+                Statement statement = connection.createStatement()
         ) {
-            statement.setString(1, place.getHall());
-            statement.setString(2, user.getName());
-            statement.setInt(3, user.getPhone());
-            statement.setInt(4, place.getRow());
-            statement.setInt(5, place.getSeat());
-            if (!statement.execute()) {
-                result = 1;
+            connection.setAutoCommit(false);
+            String hName = place.getHall();
+            String uName = user.getName();
+            int uPhone = user.getPhone();
+            int sRow = place.getRow();
+            int sNumber = place.getSeat();
+
+            String insertCommand =
+                    String.format(
+                            "DO\n"
+                                    + "$do$\n"
+                                    + "BEGIN\n"
+                                    + "IF NOT EXISTS (SELECT * FROM dbSellTickets WHERE hall_name = '%s' AND seat_row = %d AND seat_number = %d)\n"
+                                    + "THEN\n"
+                                    + "INSERT INTO dbSellTickets (hall_name, customer_name, customer_phone, seat_row, seat_number)\n"
+                                    + "VALUES ('%s', '%s', %d, %d, %d);\n"
+                                    + "END IF;\n"
+                                    + "END\n"
+                                    + "$do$\n",
+                            hName, sRow, sNumber,
+                            hName, uName, uPhone, sRow, sNumber);
+            String selectCommand =
+                    String.format(
+                            "SELECT * FROM dbSellTickets WHERE (hall_name = '%s' AND  seat_row = %d AND seat_number = %d);",
+                            hName, sRow, sNumber);
+
+            statement.executeUpdate(insertCommand);
+
+            ResultSet resultSet = statement.executeQuery(selectCommand);
+            while (resultSet.next()) {
+                if (resultSet.getInt("customer_phone") == uPhone
+                        && resultSet.getInt("seat_row") == sRow
+                        && resultSet.getInt("seat_number") == sNumber) {
+                    result = 1;
+                }
             }
+            resultSet.close();
+            connection.commit();
         } catch (SQLException e) {
             e.printStackTrace();
+            result = -1;
         }
         return result;
     }
@@ -116,6 +147,7 @@ public class DBLauncher implements DataLauncher {
     /**
      * Проверка выбранного места- занято или нет для случая, когда
      * несколько клиентов выбрали одинакковое место.
+     *
      * @param place
      * @return
      */

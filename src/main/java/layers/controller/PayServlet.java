@@ -35,7 +35,6 @@ public class PayServlet extends HttpServlet {
             msg = "Что-то пошло не так.";
         }
         msg = encode(msg, "UTF-8");
-        System.out.println("{\"answer\":\"" + msg + "\"}");
         writer.append("{\"answer\":\"" + msg + "\"}");
         writer.flush();
     }
